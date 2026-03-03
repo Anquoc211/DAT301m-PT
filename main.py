@@ -36,6 +36,8 @@ from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.model_selection import KFold
 from sklearn.utils.class_weight import compute_sample_weight
+import joblib
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -266,8 +268,32 @@ acc_weighted = accuracy_score(y_val, val_pred_weighted)
 
 print(f"\nWeighted Soft Voting F1-Macro: {f1_weighted:.6f}, Accuracy: {acc_weighted:.6f}")
 
+# ═══════════════════════════════════════════════════════════════════════════# STEP 5.5: SAVE MODEL CHECKPOINT
 # ═══════════════════════════════════════════════════════════════════════════
-# STEP 6: CHOOSE BEST APPROACH & GENERATE SUBMISSION
+# Save all trained models and preprocessing components for future reuse
+checkpoint_dir = "model_checkpoint"
+os.makedirs(checkpoint_dir, exist_ok=True)
+
+# Save scaler
+joblib.dump(scaler, os.path.join(checkpoint_dir, "scaler.pkl"))
+
+# Save base models
+for name, model in base_models:
+    joblib.dump(model, os.path.join(checkpoint_dir, f"{name}_model.pkl"))
+
+# Save meta-learner
+joblib.dump(meta_learner, os.path.join(checkpoint_dir, "meta_learner.pkl"))
+
+# Save model weights for weighted voting
+joblib.dump(weights, os.path.join(checkpoint_dir, "model_weights.pkl"))
+
+print(f"\n✓ Models saved to '{checkpoint_dir}/' directory")
+print(f"  - scaler.pkl")
+print(f"  - XGBoost_model.pkl, LightGBM_model.pkl, RandomForest_model.pkl, ExtraTrees_model.pkl, GradientBoosting_model.pkl")
+print(f"  - meta_learner.pkl")
+print(f"  - model_weights.pkl")
+
+# ═══════════════════════════════════════════════════════════════════════════# STEP 6: CHOOSE BEST APPROACH & GENERATE SUBMISSION
 # ═══════════════════════════════════════════════════════════════════════════
 # Compare stacking vs. weighted soft voting
 # Use whichever has higher F1-Macro on validation set
